@@ -268,11 +268,12 @@ impl ResponderContext {
         device_io: &mut dyn SpdmDeviceIo,
     ) -> bool {
         debug!("dispatching secured app message\n");
-        let rsp_app_buffer =
-            dispatch_secured_app_message_cb(self, session_id, bytes, auxiliary_app_data);
+        let (rsp_app_buffer, size) =
+            dispatch_secured_app_message_cb(self, session_id, bytes, auxiliary_app_data).unwrap();
+
         let _ = self.send_secured_message(
             session_id,
-            &rsp_app_buffer,
+            &rsp_app_buffer[..size],
             true,
             transport_encap,
             device_io,
