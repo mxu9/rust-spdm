@@ -77,8 +77,8 @@ impl ResponderContext {
         let my_cert_chain = self.common.provision_info.my_cert_chain.as_ref().unwrap();
 
         let mut length = get_certificate.length;
-        if length > config::MAX_SPDM_CERT_PORTION_LEN as u16 {
-            length = config::MAX_SPDM_CERT_PORTION_LEN as u16;
+        if length > MAX_SPDM_CERT_PORTION_LEN as u16 {
+            length = MAX_SPDM_CERT_PORTION_LEN as u16;
         }
 
         let offset = get_certificate.offset;
@@ -98,7 +98,7 @@ impl ResponderContext {
             &my_cert_chain.data[(offset as usize)..(offset as usize + length as usize)];
 
         info!("send spdm certificate\n");
-        let mut cert_chain = [0u8; config::MAX_SPDM_CERT_PORTION_LEN];
+        let mut cert_chain = [0u8; MAX_SPDM_CERT_PORTION_LEN];
         cert_chain[..cert_chain_data.len()].copy_from_slice(cert_chain_data);
         let response = SpdmMessage {
             header: SpdmMessageHeader {
