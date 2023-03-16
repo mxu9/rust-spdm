@@ -16,8 +16,6 @@ use alloc::boxed::Box;
 #[cfg(not(feature = "hashed-transcript-data"))]
 use crate::common::ManagedBuffer;
 
-const INITIAL_SESSION_ID: u16 = 0xFFFD;
-
 impl RequesterContext {
     pub fn send_receive_spdm_psk_exchange(
         &mut self,
@@ -28,8 +26,12 @@ impl RequesterContext {
         info!("send spdm psk exchange\n");
 
         let mut send_buffer = [0u8; config::MAX_SPDM_MESSAGE_BUFFER_SIZE];
-        let send_used =
-            self.encode_spdm_psk_exchange(measurement_summary_hash_type, &mut send_buffer)?;
+        let half_session_id = self.common.get_next_half_session_id(true)?;
+        let send_used = self.encode_spdm_psk_exchange(
+            half_session_id,
+            measurement_summary_hash_type,
+            &mut send_buffer,
+        )?;
 
         self.send_message(&send_buffer[..send_used], transport_encap, device_io)?;
 
@@ -38,7 +40,7 @@ impl RequesterContext {
         let receive_used =
             self.receive_message(&mut receive_buffer, false, transport_encap, device_io)?;
         self.handle_spdm_psk_exchange_response(
-            0,
+            half_session_id,
             measurement_summary_hash_type,
             &send_buffer[..send_used],
             &receive_buffer[..receive_used],
@@ -49,12 +51,11 @@ impl RequesterContext {
 
     pub fn encode_spdm_psk_exchange(
         &mut self,
+        half_session_id: u16,
         measurement_summary_hash_type: SpdmMeasurementSummaryHashType,
         buf: &mut [u8],
     ) -> SpdmResult<usize> {
         let mut writer = Writer::init(buf);
-
-        let req_session_id = INITIAL_SESSION_ID;
 
         let mut psk_context = [0u8; MAX_SPDM_PSK_CONTEXT_SIZE];
         crypto::rand::get_random(&mut psk_context)?;
@@ -92,7 +93,7 @@ impl RequesterContext {
             },
             payload: SpdmMessagePayload::SpdmPskExchangeRequest(SpdmPskExchangeRequestPayload {
                 measurement_summary_hash_type,
-                req_session_id,
+                req_session_id: half_session_id,
                 psk_hint: SpdmPskHintStruct::default(),
                 psk_context: SpdmPskContextStruct {
                     data_size: self.common.negotiate_info.base_hash_sel.get_size(),
@@ -107,7 +108,7 @@ impl RequesterContext {
 
     pub fn handle_spdm_psk_exchange_response(
         &mut self,
-        session_id: u32,
+        half_session_id: u16,
         measurement_summary_hash_type: SpdmMeasurementSummaryHashType,
         send_buffer: &[u8],
         receive_buffer: &[u8],
@@ -205,7 +206,7 @@ impl RequesterContext {
                             };
 
                             let session_id = ((psk_exchange_rsp.rsp_session_id as u32) << 16)
-                                + INITIAL_SESSION_ID as u32;
+                                + half_session_id as u32;
                             let spdm_version_sel = self.common.negotiate_info.spdm_version_sel;
                             let session = self
                                 .common
@@ -292,7 +293,7 @@ impl RequesterContext {
                     }
                     SpdmRequestResponseCode::SpdmResponseError => {
                         let erm = self.spdm_handle_error_response_main(
-                            Some(session_id),
+                            None,
                             receive_buffer,
                             SpdmRequestResponseCode::SpdmRequestPskExchange,
                             SpdmRequestResponseCode::SpdmResponsePskExchangeRsp,
@@ -304,7 +305,7 @@ impl RequesterContext {
                                 let receive_buffer = rm.receive_buffer;
                                 let used = rm.used;
                                 self.handle_spdm_psk_exchange_response(
-                                    session_id,
+                                    half_session_id,
                                     measurement_summary_hash_type,
                                     send_buffer,
                                     &receive_buffer[..used],

@@ -119,7 +119,7 @@ impl ResponderContext {
         let mut psk_context = [0u8; MAX_SPDM_PSK_CONTEXT_SIZE];
         let _ = crypto::rand::get_random(&mut psk_context);
 
-        let rsp_session_id = 0xFFFD;
+        let rsp_session_id = self.common.get_next_half_session_id(false)?;
 
         let response = SpdmMessage {
             header: SpdmMessageHeader {

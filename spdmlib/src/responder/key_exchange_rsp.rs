@@ -135,7 +135,7 @@ impl ResponderContext {
         let mut random = [0u8; SPDM_RANDOM_SIZE];
         let _ = crypto::rand::get_random(&mut random);
 
-        let rsp_session_id = 0xFFFE;
+        let rsp_session_id = self.common.get_next_half_session_id(false)?;
 
         let response = SpdmMessage {
             header: SpdmMessageHeader {
