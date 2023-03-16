@@ -48,7 +48,7 @@ impl ResponderContext {
         let _ = self.send_secured_message(
             session_id,
             &send_buffer[..used],
-            true,
+            false,
             transport_encap,
             device_io,
         );
