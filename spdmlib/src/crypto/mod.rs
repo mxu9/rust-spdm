@@ -142,7 +142,8 @@ pub mod asym_sign {
     static DEFAULT: SpdmAsymSign = SpdmAsymSign {
         sign_cb: |_base_hash_algo: SpdmBaseHashAlgo,
                   _base_asym_algo: SpdmBaseAsymAlgo,
-                  _data: &[u8]|
+                  _data: &[u8],
+                  _cert_chain_data: &[u8]|
          -> Option<SpdmSignatureStruct> { unimplemented!() },
     };
 
@@ -150,11 +151,12 @@ pub mod asym_sign {
         base_hash_algo: SpdmBaseHashAlgo,
         base_asym_algo: SpdmBaseAsymAlgo,
         data: &[u8],
+        cert_chain_data: &[u8],
     ) -> Option<SpdmSignatureStruct> {
         (CRYPTO_ASYM_SIGN
             .try_get_or_init(|| DEFAULT.clone())
             .ok()?
-            .sign_cb)(base_hash_algo, base_asym_algo, data)
+            .sign_cb)(base_hash_algo, base_asym_algo, data, cert_chain_data)
     }
 }
 

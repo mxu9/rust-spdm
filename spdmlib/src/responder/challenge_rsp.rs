@@ -234,10 +234,13 @@ impl ResponderContext {
                 .ok_or_else(|| spdm_err!(ENOMEM))?;
         }
 
+        let my_cert_chain_data = self.common.provision_info.my_cert_chain_data.as_ref().clone();
+
         crypto::asym_sign::sign(
             self.common.negotiate_info.base_hash_sel,
             self.common.negotiate_info.base_asym_sel,
             message.as_ref(),
+            my_cert_chain_data.unwrap().as_ref(),
         )
         .ok_or_else(|| spdm_err!(EFAULT))
     }

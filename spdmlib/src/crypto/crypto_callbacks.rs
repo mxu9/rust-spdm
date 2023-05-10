@@ -72,6 +72,7 @@ pub struct SpdmAsymSign {
         base_hash_algo: SpdmBaseHashAlgo,
         base_asym_algo: SpdmBaseAsymAlgo,
         data: &[u8],
+        cert_chain_data: &[u8],
     ) -> Option<SpdmSignatureStruct>,
 }
 
